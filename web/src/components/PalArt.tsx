@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
+import { asset } from "../lib/assets";
 import type { Pal } from "../lib/types";
 
 // Full artwork where we have it, falling back to the round game icon.
 export function PalArt({ pal, className = "" }: { pal: Pal; className?: string }) {
-  const [src, setSrc] = useState(`/art/${pal.internalName}.png`);
+  const [src, setSrc] = useState(asset(`art/${pal.internalName}.png`));
   const [usingFallback, setUsingFallback] = useState(false);
 
   useEffect(() => {
-    setSrc(`/art/${pal.internalName}.png`);
+    setSrc(asset(`art/${pal.internalName}.png`));
     setUsingFallback(false);
   }, [pal.internalName]);
 
@@ -20,7 +21,7 @@ export function PalArt({ pal, className = "" }: { pal: Pal; className?: string }
         onError={() => {
           if (!usingFallback) {
             setUsingFallback(true);
-            setSrc(`/icons/${pal.internalName}.png`);
+            setSrc(asset(`icons/${pal.internalName}.png`));
           }
         }}
       />

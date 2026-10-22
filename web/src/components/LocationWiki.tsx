@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { asset } from "../lib/assets";
 import type { Dataset } from "../lib/types";
 import { enumCodec, palCodec, useUrlState } from "../lib/urlState";
 import { BossTag } from "./BossTag";
@@ -113,7 +114,7 @@ export function LocationWiki({ dataset }: Props) {
             <img
               key={`${pal.internalName}-${period}`}
               className="location-map"
-              src={`/maps/${pal.internalName}-${period}.png`}
+              src={asset(`maps/${pal.internalName}-${period}.png`)}
               alt={`${pal.name} spawn locations (${period})`}
               onError={() => setMapMissing(true)}
             />

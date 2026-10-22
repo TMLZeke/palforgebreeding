@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { asset } from "../lib/assets";
 import { formatDex, rarityLabel, searchPals } from "../lib/breeding";
 import type { Dataset, Pal } from "../lib/types";
 import { useClickOutside } from "../lib/useClickOutside";
@@ -251,7 +252,7 @@ export function PalChip({
       >
         <img
           className="pal-icon"
-          src={`/icons/${pal.internalName}.png`}
+          src={asset(`icons/${pal.internalName}.png`)}
           alt=""
           loading="lazy"
           width={28}
@@ -287,7 +288,7 @@ function PalInfoPopover({
       <span className="pal-info-head">
         <img
           className="pal-icon"
-          src={`/icons/${pal.internalName}.png`}
+          src={asset(`icons/${pal.internalName}.png`)}
           alt=""
           width={40}
           height={40}
