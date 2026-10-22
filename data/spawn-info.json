@@ -1,0 +1,92 @@
+{
+  "Kirin": {
+    "bossStatus": "boss-and-wild"
+  },
+  "Umihebi": {
+    "bossStatus": "boss-only"
+  },
+  "Suzaku": {
+    "bossStatus": "boss-and-wild"
+  },
+  "FairyDragon": {
+    "bossStatus": "boss-and-wild"
+  },
+  "BlueDragon": {
+    "bossStatus": "boss-and-wild"
+  },
+  "FengyunDeeper": {
+    "bossStatus": "boss-and-wild"
+  },
+  "FlowerDinosaur_Electric": {
+    "bossStatus": "boss-and-wild"
+  },
+  "IceHorse": {
+    "bossStatus": "boss-only"
+  },
+  "GrassMammoth": {
+    "bossStatus": "boss-and-wild"
+  },
+  "SakuraSaurus": {
+    "bossStatus": "boss-and-wild"
+  },
+  "SakuraSaurus_Water": {
+    "bossStatus": "boss-only"
+  },
+  "KingBahamut": {
+    "bossStatus": "boss-and-wild"
+  },
+  "Yeti_Grass": {
+    "bossStatus": "boss-and-wild"
+  },
+  "HawkBird": {
+    "bossStatus": "boss-and-wild"
+  },
+  "LilyQueen_Dark": {
+    "bossStatus": "boss-only"
+  },
+  "QueenBee": {
+    "bossStatus": "boss-and-wild"
+  },
+  "GrassPanda_Electric": {
+    "bossStatus": "boss-only"
+  },
+  "BlackMetalDragon": {
+    "bossStatus": "boss-and-wild"
+  },
+  "JetDragon": {
+    "bossStatus": "boss-only"
+  },
+  "KingAlpaca": {
+    "bossStatus": "boss-and-wild"
+  },
+  "KingAlpaca_Ice": {
+    "bossStatus": "boss-only"
+  },
+  "PlantSlime": {
+    "bossStatus": "boss-and-wild"
+  },
+  "MopKing": {
+    "bossStatus": "boss-and-wild"
+  },
+  "ThunderBird": {
+    "bossStatus": "boss-and-wild"
+  },
+  "SaintCentaur": {
+    "bossStatus": "boss-only"
+  },
+  "WeaselDragon": {
+    "bossStatus": "boss-and-wild"
+  },
+  "BlackCentaur": {
+    "bossStatus": "boss-only"
+  },
+  "NaughtyCat": {
+    "bossStatus": "boss-and-wild"
+  },
+  "DarkScorpion": {
+    "bossStatus": "boss-and-wild"
+  },
+  "LazyCatfish": {
+    "bossStatus": "boss-and-wild"
+  }
+}

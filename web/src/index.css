@@ -1,0 +1,5 @@
+/* Base reset lives mostly in App.scss; keep this thin for Vite defaults. */
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
