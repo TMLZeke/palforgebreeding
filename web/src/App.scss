@@ -785,6 +785,19 @@ input[type="range"] {
   background: rgba(255, 255, 255, 0.02);
 }
 
+/* Columns so the second parent lines up down the whole list. */
+@media (min-width: 640px) {
+  .pair-row {
+    display: grid;
+    grid-template-columns: minmax(0, 15rem) 1.25rem minmax(0, 1fr) auto;
+    gap: 0.5rem;
+  }
+
+  .pair-row .times {
+    text-align: center;
+  }
+}
+
 .pair-row .times {
   color: var(--accent);
   font-weight: 700;
@@ -817,7 +830,8 @@ input[type="range"] {
 @media (min-width: 800px) {
   .path-hero {
     grid-template-columns: 1.4fr auto 1fr;
-    align-items: start;
+    /* Align the pickers' bottoms: the left side has an extra group label. */
+    align-items: end;
   }
 }
 
@@ -826,8 +840,8 @@ input[type="range"] {
   font-size: 1.6rem;
   font-weight: 700;
   color: var(--accent);
-  align-self: center;
-  padding-top: 1.4rem;
+  align-self: end;
+  padding-bottom: 0.55rem;
 }
 
 @media (min-width: 800px) {
@@ -1578,6 +1592,10 @@ input[type="range"] {
 
 .sort-field {
   min-width: 11rem;
+}
+
+.mount-search {
+  flex: 0 1 16rem;
 }
 
 .mount-table-wrap {

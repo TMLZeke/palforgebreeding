@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { MOUNTS, type MountCategory, type MountInfo } from "../lib/mountData";
 import type { Dataset, Pal } from "../lib/types";
-import { enumCodec, useUrlState } from "../lib/urlState";
+import { enumCodec, stringCodec, useUrlState } from "../lib/urlState";
 import { PalChip } from "./PalSelect";
 
 type Props = { dataset: Dataset; onViewLocation?: (palId: number) => void };
@@ -41,6 +41,7 @@ export function MountSpeeds({ dataset, onViewLocation }: Props) {
     categoryCodec,
   );
   const [sortBy, setSortBy] = useUrlState<SortKey>("sort", "sprint", sortCodec);
+  const [query, setQuery] = useUrlState("q", "", stringCodec);
 
   const palByName = useMemo(
     () => new Map(dataset.pals.map((p) => [p.name, p])),
@@ -48,14 +49,21 @@ export function MountSpeeds({ dataset, onViewLocation }: Props) {
   );
 
   const rows = useMemo(() => {
-    const list = MOUNTS.filter((m) => m.category === category);
+    const q = query.trim().toLowerCase();
+    const list = MOUNTS.filter(
+      (m) =>
+        m.category === category &&
+        (!q ||
+          m.name.toLowerCase().includes(q) ||
+          m.skill.toLowerCase().includes(q)),
+    );
     const value = (m: MountInfo) => {
       if (sortBy === "sprint") return m.sprintSpeed ?? -1;
       if (sortBy === "average") return m.average ?? -1;
       return -m.saddleLevel; // lower saddle level first
     };
     return [...list].sort((a, b) => value(b) - value(a));
-  }, [category, sortBy]);
+  }, [category, sortBy, query]);
 
   const active = CATEGORIES.find((c) => c.id === category)!;
   const isGlider = category === "glider";
@@ -87,6 +95,15 @@ export function MountSpeeds({ dataset, onViewLocation }: Props) {
 
       <div className="mount-toolbar">
         <p className="category-blurb">{active.blurb}</p>
+        <label className="text-field mount-search">
+          <span className="field-label">Search</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Pal or mount skill…"
+          />
+        </label>
         {!isGlider && (
           <label className="text-field sort-field">
             <span className="field-label">Sort by</span>
