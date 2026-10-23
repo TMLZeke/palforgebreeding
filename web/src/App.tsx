@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BaseAdvisor } from "./components/BaseAdvisor";
 import { BreedingTips } from "./components/BreedingTips";
 import { ComboCalculator } from "./components/ComboCalculator";
+import { Home } from "./components/Home";
 import { LocationWiki } from "./components/LocationWiki";
 import { MountSpeeds } from "./components/MountSpeeds";
 import { ParentFinder } from "./components/ParentFinder";
@@ -13,7 +14,8 @@ import { enumCodec, writeParams } from "./lib/urlState";
 import type { Dataset } from "./lib/types";
 import "./App.scss";
 
-type Tab =
+export type Tab =
+  | "home"
   | "combo"
   | "parents"
   | "tree"
@@ -46,22 +48,29 @@ const TAB_GROUPS: { label: string; tabs: { id: Tab; label: string }[] }[] = [
   },
 ];
 
-const TAB_IDS = TAB_GROUPS.flatMap((g) => g.tabs.map((t) => t.id));
+const TAB_IDS: Tab[] = [
+  "home",
+  ...TAB_GROUPS.flatMap((g) => g.tabs.map((t) => t.id)),
+];
 const tabCodec = enumCodec(TAB_IDS);
 
 export default function App() {
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>(() => {
-    const raw = new URLSearchParams(window.location.search).get("tab");
-    return (raw && tabCodec.parse(raw)) || "combo";
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get("tab");
+    const parsed = raw ? tabCodec.parse(raw) : undefined;
+    if (parsed) return parsed;
+    // Combo used to be the default view, so its links had no tab param.
+    return params.has("a") || params.has("b") ? "combo" : "home";
   });
 
   // Each tool starts fresh when you switch to it (as before), so the URL
   // keeps only the new tab plus any params handed over to it.
   function switchTab(next: Tab, params: Record<string, string> = {}) {
     const search = new URLSearchParams(params);
-    if (next !== "combo") search.set("tab", next);
+    if (next !== "home") search.set("tab", next);
     writeParams(search);
     setTab(next);
   }
@@ -89,7 +98,17 @@ export default function App() {
       <div className="atmosphere" aria-hidden />
       <header className="topbar">
         <h1 className="brand">
-          Palforge
+          <a
+            href={import.meta.env.BASE_URL}
+            className="brand-link"
+            aria-current={tab === "home" ? "page" : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              if (tab !== "home") switchTab("home");
+            }}
+          >
+            Palforge
+          </a>
           <span className="brand-sub">Palworld 1.0 breeding planner</span>
         </h1>
         {dataset && (
@@ -130,6 +149,12 @@ export default function App() {
       <main>
         {error && <p className="error">{error}</p>}
         {!dataset && !error && <p className="loading">Loading 1.0 dataset…</p>}
+        {dataset && tab === "home" && (
+          <Home
+            dataset={dataset}
+            onOpen={(next, params) => switchTab(next, params)}
+          />
+        )}
         {dataset && tab === "combo" && (
           <ComboCalculator
             dataset={dataset}
