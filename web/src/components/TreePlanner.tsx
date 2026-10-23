@@ -1,8 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { breedChild, formatDex, parentsFor } from "../lib/breeding";
+import { useOwnedPals } from "../lib/owned";
 import type { PassiveEntry } from "../lib/passives";
 import { planPathFromStarters } from "../lib/treePlanner";
-import { collectGatherList, flattenBreedSteps } from "../lib/treeSteps";
+import {
+  collectGatherList,
+  flattenBreedSteps,
+  type BreedStep,
+  type GatherItem,
+} from "../lib/treeSteps";
 import type { Dataset, TreeNode } from "../lib/types";
 import {
   boolCodec,
@@ -11,6 +17,7 @@ import {
   palListCodec,
   useUrlState,
 } from "../lib/urlState";
+import { OwnedPals } from "./OwnedPals";
 import { PalArt } from "./PalArt";
 import { PalChip, PalMultiSelect, PalSelect } from "./PalSelect";
 import { PassiveFunnelStep } from "./PassiveFunnelStep";
@@ -48,12 +55,18 @@ export function TreePlanner({ dataset }: Props) {
     intCodec(500, 1400),
   );
 
+  const [useMine, setUseMine] = useUrlState("mine", false, boolCodec);
+  const { ids: myPals } = useOwnedPals(dataset);
+
   const starters = useMemo(() => {
-    const ids = [starterA, starterB, ...extraOwned].filter(
-      (id): id is number => id !== null,
-    );
+    const ids = [
+      starterA,
+      starterB,
+      ...extraOwned,
+      ...(useMine ? myPals : []),
+    ].filter((id): id is number => id !== null);
     return [...new Set(ids)];
-  }, [starterA, starterB, extraOwned]);
+  }, [starterA, starterB, extraOwned, useMine, myPals]);
 
   const firstEgg =
     starterA !== null && starterB !== null
@@ -197,11 +210,21 @@ export function TreePlanner({ dataset }: Props) {
         onToggle={(e) => setOptionsOpen(e.currentTarget.open)}
       >
         <summary>More options</summary>
+        <label className="toggle-row">
+          <input
+            type="checkbox"
+            checked={useMine}
+            disabled={myPals.length === 0 && !useMine}
+            onChange={(e) => setUseMine(e.target.checked)}
+          />
+          Use my Pals list as stock ({myPals.length})
+        </label>
+        <OwnedPals dataset={dataset} />
         <PalMultiSelect
           dataset={dataset}
           values={extraOwned}
           onChange={setExtraOwned}
-          label="Extra owned pals"
+          label="Extra owned pals (this plan only)"
         />
         <label className="toggle-row">
           <input
@@ -311,7 +334,7 @@ export function TreePlanner({ dataset }: Props) {
             {target !== null && (
               <PalArt pal={dataset.pals[target]} className="summary-art" />
             )}
-            <div>
+            <div className="tree-summary-body">
               {target !== null && (
                 <h3 className="result-name">
                   {dataset.pals[target].name}
@@ -327,6 +350,11 @@ export function TreePlanner({ dataset }: Props) {
                   : "uses wild / catchable parents"}
               </p>
             </div>
+            <CopyPlanButton
+              text={() =>
+                planToText(dataset, plan.targetId, plan.steps, gather, steps)
+              }
+            />
           </div>
 
           {gather.length > 0 && (
@@ -364,6 +392,10 @@ export function TreePlanner({ dataset }: Props) {
                       key={key}
                       className={isGoal ? "is-goal" : ""}
                     >
+                      <PalArt
+                        pal={dataset.pals[s.childId]}
+                        className="step-art"
+                      />
                       <span className="step-num">Step {s.step}</span>
                       <div className="step-flow">
                         <PalChip pal={dataset.pals[s.parentAId]} />
@@ -463,5 +495,83 @@ function FamilyDiagram({
         <PalChip pal={dataset.pals[node.palId]} />
       </div>
     </div>
+  );
+}
+
+function planToText(
+  dataset: Dataset,
+  targetId: number,
+  stepCount: number,
+  gather: GatherItem[],
+  steps: BreedStep[],
+): string {
+  const name = (id: number) => dataset.pals[id].name;
+  const lines = [
+    `Palforge plan: ${name(targetId)} (${stepCount} breed step${stepCount === 1 ? "" : "s"})`,
+  ];
+  if (gather.length > 0) {
+    lines.push(
+      "Get: " +
+        gather
+          .map((g) => `${name(g.palId)} (${g.kind === "owned" ? "have" : "catch"})`)
+          .join(", "),
+    );
+  }
+  for (const s of steps) {
+    lines.push(
+      `${s.step}. ${name(s.parentAId)} × ${name(s.parentBId)} → ${name(s.childId)}`,
+    );
+  }
+  lines.push(window.location.href);
+  return lines.join("\n");
+}
+
+// The async Clipboard API is blocked in some embedded browsers and older
+// setups; fall back to the legacy copy command there.
+async function copyText(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return;
+  } catch {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand("copy");
+    area.remove();
+    if (!ok) throw new Error("Copy failed");
+  }
+}
+
+function CopyPlanButton({ text }: { text: () => string }) {
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+
+  useEffect(() => {
+    if (state === "idle") return;
+    const t = window.setTimeout(() => setState("idle"), 2000);
+    return () => window.clearTimeout(t);
+  }, [state]);
+
+  return (
+    <button
+      type="button"
+      className="ghost-btn copy-plan-btn"
+      onClick={() =>
+        copyText(text())
+          .then(() => setState("copied"))
+          .catch(() => setState("failed"))
+      }
+    >
+      <span aria-live="polite">
+        {state === "copied"
+          ? "Copied!"
+          : state === "failed"
+            ? "Couldn’t copy"
+            : "Copy plan"}
+      </span>
+    </button>
   );
 }

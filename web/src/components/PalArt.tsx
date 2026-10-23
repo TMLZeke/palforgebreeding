@@ -4,11 +4,11 @@ import type { Pal } from "../lib/types";
 
 // Full artwork where we have it, falling back to the round game icon.
 export function PalArt({ pal, className = "" }: { pal: Pal; className?: string }) {
-  const [src, setSrc] = useState(asset(`art/${pal.internalName}.png`));
+  const [src, setSrc] = useState(asset(`art/${pal.internalName}.webp`));
   const [usingFallback, setUsingFallback] = useState(false);
 
   useEffect(() => {
-    setSrc(asset(`art/${pal.internalName}.png`));
+    setSrc(asset(`art/${pal.internalName}.webp`));
     setUsingFallback(false);
   }, [pal.internalName]);
 

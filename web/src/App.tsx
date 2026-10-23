@@ -130,7 +130,14 @@ export default function App() {
       <main>
         {error && <p className="error">{error}</p>}
         {!dataset && !error && <p className="loading">Loading 1.0 dataset…</p>}
-        {dataset && tab === "combo" && <ComboCalculator dataset={dataset} />}
+        {dataset && tab === "combo" && (
+          <ComboCalculator
+            dataset={dataset}
+            onPlanPath={(id) =>
+              switchTab("tree", { pal: dataset.pals[id].internalName })
+            }
+          />
+        )}
         {dataset && tab === "parents" && <ParentFinder dataset={dataset} />}
         {dataset && tab === "tree" && <TreePlanner dataset={dataset} />}
         {dataset && tab === "passives" && <PassiveBrowser dataset={dataset} />}

@@ -5,9 +5,9 @@ import { boolCodec, palCodec, useUrlState } from "../lib/urlState";
 import { PalArt } from "./PalArt";
 import { PalChip, PalSelect } from "./PalSelect";
 
-type Props = { dataset: Dataset };
+type Props = { dataset: Dataset; onPlanPath?: (palId: number) => void };
 
-export function ComboCalculator({ dataset }: Props) {
+export function ComboCalculator({ dataset, onPlanPath }: Props) {
   const pal = palCodec(dataset);
   const [parentA, setParentA] = useUrlState("a", null, pal);
   const [parentB, setParentB] = useUrlState("b", null, pal);
@@ -37,13 +37,26 @@ export function ComboCalculator({ dataset }: Props) {
         <p>Pick two parents to see the 1.0 offspring species.</p>
       </header>
 
-      <div className="pair-grid">
+      <div className="combo-pickers">
         <PalSelect
           dataset={dataset}
           label="Parent A"
           value={parentA}
           onChange={setParentA}
         />
+        <button
+          type="button"
+          className="swap-btn"
+          aria-label="Swap parents"
+          title="Swap parents"
+          disabled={parentA === null && parentB === null}
+          onClick={() => {
+            setParentA(parentB);
+            setParentB(parentA);
+          }}
+        >
+          <SwapIcon />
+        </button>
         <PalSelect
           dataset={dataset}
           label="Parent B"
@@ -100,6 +113,15 @@ export function ComboCalculator({ dataset }: Props) {
                   ))}
                 </div>
               )}
+              {onPlanPath && (
+                <button
+                  type="button"
+                  className="ghost-btn plan-path-btn"
+                  onClick={() => onPlanPath(child.id)}
+                >
+                  Plan a path to {child.name} →
+                </button>
+              )}
               {result?.genderDependent && alt && (
                 <p className="note">
                   Gender swap yields <PalChip pal={alt} />
@@ -110,5 +132,23 @@ export function ComboCalculator({ dataset }: Props) {
         )}
       </div>
     </section>
+  );
+}
+
+function SwapIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width="16"
+      height="16"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M2.5 5h10m0 0-2.5-2.5M12.5 5 10 7.5M13.5 11h-10m0 0L6 8.5M3.5 11 6 13.5" />
+    </svg>
   );
 }

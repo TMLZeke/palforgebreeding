@@ -8,6 +8,7 @@
     "art": "node scripts/fetch-art.mjs",
     "pal-info": "node scripts/fetch-pal-info.mjs",
     "locations": "node scripts/fetch-locations.mjs",
+    "webp": "node scripts/to-webp.mjs",
     "dev": "npm --prefix web run dev",
     "build": "npm run data && npm --prefix web run build",
     "preview": "npm --prefix web run preview",

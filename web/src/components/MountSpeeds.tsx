@@ -29,10 +29,47 @@ const CATEGORIES: { id: MountCategory; label: string; blurb: string }[] = [
   },
 ];
 
-type SortKey = "sprint" | "average" | "saddle";
+type SortKey =
+  | "name"
+  | "saddle"
+  | "run"
+  | "sprint"
+  | "stamina"
+  | "average"
+  | "distance";
+
+const SORT_LABELS: Record<SortKey, string> = {
+  name: "Name",
+  saddle: "Saddle level",
+  run: "Run speed",
+  sprint: "Sprint speed",
+  stamina: "Stamina",
+  average: "Average speed",
+  distance: "Distance",
+};
 
 const categoryCodec = enumCodec(CATEGORIES.map((c) => c.id));
-const sortCodec = enumCodec<SortKey>(["sprint", "average", "saddle"]);
+const sortCodec = enumCodec<SortKey>(Object.keys(SORT_LABELS) as SortKey[]);
+
+// Name and saddle level read best low → high; speeds and stats high → low.
+function sortValue(m: MountInfo, key: SortKey): number {
+  switch (key) {
+    case "saddle":
+      return -m.saddleLevel;
+    case "run":
+      return m.runSpeed ?? -1;
+    case "sprint":
+      return m.sprintSpeed ?? -1;
+    case "stamina":
+      return m.stamina ?? -1;
+    case "average":
+      return m.average ?? -1;
+    case "distance":
+      return m.distance ?? -1;
+    default:
+      return 0;
+  }
+}
 
 export function MountSpeeds({ dataset, onViewLocation }: Props) {
   const [category, setCategory] = useUrlState<MountCategory>(
@@ -57,14 +94,13 @@ export function MountSpeeds({ dataset, onViewLocation }: Props) {
           m.name.toLowerCase().includes(q) ||
           m.skill.toLowerCase().includes(q)),
     );
-    const value = (m: MountInfo) => {
-      if (sortBy === "sprint") return m.sprintSpeed ?? -1;
-      if (sortBy === "average") return m.average ?? -1;
-      return -m.saddleLevel; // lower saddle level first
-    };
-    return [...list].sort((a, b) => value(b) - value(a));
+    if (sortBy === "name") {
+      return [...list].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return [...list].sort((a, b) => sortValue(b, sortBy) - sortValue(a, sortBy));
   }, [category, sortBy, query]);
 
+  const sortProps = { sortBy, onSort: setSortBy };
   const active = CATEGORIES.find((c) => c.id === category)!;
   const isGlider = category === "glider";
 
@@ -111,9 +147,11 @@ export function MountSpeeds({ dataset, onViewLocation }: Props) {
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortKey)}
             >
-              <option value="sprint">Sprint speed</option>
-              <option value="average">Average speed</option>
-              <option value="saddle">Saddle level</option>
+              {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+                <option key={k} value={k}>
+                  {SORT_LABELS[k]}
+                </option>
+              ))}
             </select>
           </label>
         )}
@@ -123,17 +161,17 @@ export function MountSpeeds({ dataset, onViewLocation }: Props) {
         <table className="mount-table">
           <thead>
             <tr>
-              <th>Pal</th>
-              <th>Saddle</th>
+              <SortHeader label="Pal" sortKey="name" {...sortProps} />
+              <SortHeader label="Saddle" sortKey="saddle" {...sortProps} />
               {isGlider ? (
-                <th>Glide speed</th>
+                <SortHeader label="Glide speed" sortKey="sprint" {...sortProps} />
               ) : (
                 <>
-                  <th>Run</th>
-                  <th>Sprint</th>
-                  <th>Stamina</th>
-                  <th>Avg</th>
-                  <th>Distance</th>
+                  <SortHeader label="Run" sortKey="run" {...sortProps} />
+                  <SortHeader label="Sprint" sortKey="sprint" {...sortProps} />
+                  <SortHeader label="Stamina" sortKey="stamina" {...sortProps} />
+                  <SortHeader label="Avg" sortKey="average" {...sortProps} />
+                  <SortHeader label="Distance" sortKey="distance" {...sortProps} />
                 </>
               )}
               <th className="skill-col">Mount skill</th>
@@ -155,16 +193,30 @@ export function MountSpeeds({ dataset, onViewLocation }: Props) {
                       m.name
                     )}
                   </td>
-                  <td>Lv {m.saddleLevel}</td>
+                  <td className={sortBy === "saddle" ? "sorted-cell" : ""}>
+                    Lv {m.saddleLevel}
+                  </td>
                   {isGlider ? (
-                    <td>{m.sprintSpeed ?? "—"}</td>
+                    <td className={sortBy === "sprint" ? "sorted-cell" : ""}>
+                      {m.sprintSpeed ?? "—"}
+                    </td>
                   ) : (
                     <>
-                      <td>{m.runSpeed ?? "—"}</td>
-                      <td className="sprint-cell">{m.sprintSpeed ?? "—"}</td>
-                      <td>{m.stamina ?? "—"}</td>
-                      <td>{m.average ?? "—"}</td>
-                      <td>{m.distance?.toLocaleString() ?? "—"}</td>
+                      <td className={sortBy === "run" ? "sorted-cell" : ""}>
+                        {m.runSpeed ?? "—"}
+                      </td>
+                      <td className={sortBy === "sprint" ? "sorted-cell" : ""}>
+                        {m.sprintSpeed ?? "—"}
+                      </td>
+                      <td className={sortBy === "stamina" ? "sorted-cell" : ""}>
+                        {m.stamina ?? "—"}
+                      </td>
+                      <td className={sortBy === "average" ? "sorted-cell" : ""}>
+                        {m.average ?? "—"}
+                      </td>
+                      <td className={sortBy === "distance" ? "sorted-cell" : ""}>
+                        {m.distance?.toLocaleString() ?? "—"}
+                      </td>
                     </>
                   )}
                   <td className="skill-col">{m.skill}</td>
@@ -205,5 +257,34 @@ function MountPalCell({
         </span>
       )}
     </span>
+  );
+}
+
+function SortHeader({
+  label,
+  sortKey,
+  sortBy,
+  onSort,
+}: {
+  label: string;
+  sortKey: SortKey;
+  sortBy: SortKey;
+  onSort: (key: SortKey) => void;
+}) {
+  const active = sortBy === sortKey;
+  const ascending = sortKey === "name" || sortKey === "saddle";
+  return (
+    <th aria-sort={active ? (ascending ? "ascending" : "descending") : undefined}>
+      <button
+        type="button"
+        className={`sort-btn${active ? " active" : ""}`}
+        onClick={() => onSort(sortKey)}
+      >
+        {label}
+        <span className="sort-arrow" aria-hidden>
+          {active ? (ascending ? "↑" : "↓") : "↕"}
+        </span>
+      </button>
+    </th>
   );
 }

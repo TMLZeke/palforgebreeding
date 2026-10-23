@@ -32,6 +32,9 @@ Open the local URL Vite prints (usually `http://localhost:5173`).
 
 See [`data/DATA_SOURCE.md`](data/DATA_SOURCE.md). Source exports come from [tylercamp/palcalc](https://github.com/tylercamp/palcalc).
 
+Pal art and spawn maps ship as WebP. After `npm run art` or `npm run locations`,
+run `npm run webp` (needs ffmpeg on PATH) to convert the new PNGs.
+
 ## v1 scope
 
 - Species breeding only (no OCR, no save import yet)

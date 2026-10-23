@@ -53,7 +53,12 @@ async function fetchArt(pal) {
     return;
   }
   const dest = path.join(outDir, `${pal.InternalName}.png`);
-  if (fs.existsSync(dest) && fs.statSync(dest).size > 0) {
+  // The site ships WebP (see scripts/to-webp.mjs); an existing .webp counts.
+  const webp = dest.replace(/.png$/, ".webp");
+  if (
+    (fs.existsSync(dest) && fs.statSync(dest).size > 0) ||
+    fs.existsSync(webp)
+  ) {
     skipped++;
     return;
   }

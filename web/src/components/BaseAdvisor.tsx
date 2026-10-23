@@ -5,8 +5,10 @@ import {
   recommendBasePals,
   type BaseTypeId,
 } from "../lib/baseAdvisor";
+import { useOwnedPals } from "../lib/owned";
 import type { Dataset } from "../lib/types";
-import { enumCodec, intCodec, useUrlState } from "../lib/urlState";
+import { boolCodec, enumCodec, intCodec, useUrlState } from "../lib/urlState";
+import { OwnedPals } from "./OwnedPals";
 import { PalArt } from "./PalArt";
 import { PalChip } from "./PalSelect";
 
@@ -34,6 +36,9 @@ export function BaseAdvisor({ dataset }: Props) {
     baseTypeCodec,
   );
   const [slots, setSlots] = useUrlState("slots", 10, slotsCodec);
+  const [ownedOnly, setOwnedOnly] = useUrlState("mine", false, boolCodec);
+  const { owned } = useOwnedPals(dataset);
+  const limitToOwned = ownedOnly && owned.size > 0;
   const [excluded, setExcluded] = useState<Set<number>>(loadExcluded);
 
   useEffect(() => {
@@ -42,10 +47,14 @@ export function BaseAdvisor({ dataset }: Props) {
 
   const baseType = BASE_TYPES.find((b) => b.id === baseTypeId)!;
 
-  const recommendations = useMemo(
-    () => recommendBasePals(dataset, baseType, slots, excluded),
-    [dataset, baseType, slots, excluded],
-  );
+  const recommendations = useMemo(() => {
+    if (!limitToOwned) {
+      return recommendBasePals(dataset, baseType, slots, excluded);
+    }
+    const skip = new Set(excluded);
+    for (const p of dataset.pals) if (!owned.has(p.id)) skip.add(p.id);
+    return recommendBasePals(dataset, baseType, slots, skip);
+  }, [dataset, baseType, slots, excluded, limitToOwned, owned]);
 
   function markDontHave(palId: number) {
     setExcluded((prev) => new Set(prev).add(palId));
@@ -109,6 +118,20 @@ export function BaseAdvisor({ dataset }: Props) {
             value={slots}
             onChange={(e) => setSlots(Number(e.target.value))}
           />
+        </label>
+      </div>
+
+      <div className="owned-row">
+        <OwnedPals dataset={dataset} />
+        <label className="toggle-row">
+          <input
+            type="checkbox"
+            checked={ownedOnly}
+            disabled={owned.size === 0}
+            onChange={(e) => setOwnedOnly(e.target.checked)}
+          />
+          Only recommend Pals I own
+          {owned.size === 0 && " (add some under My Pals first)"}
         </label>
       </div>
 

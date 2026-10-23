@@ -114,7 +114,7 @@ export function LocationWiki({ dataset }: Props) {
             <img
               key={`${pal.internalName}-${period}`}
               className="location-map"
-              src={asset(`maps/${pal.internalName}-${period}.png`)}
+              src={asset(`maps/${pal.internalName}-${period}.webp`)}
               alt={`${pal.name} spawn locations (${period})`}
               onError={() => setMapMissing(true)}
             />
