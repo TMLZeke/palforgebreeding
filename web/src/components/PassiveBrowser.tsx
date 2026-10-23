@@ -1,31 +1,52 @@
 import { useMemo } from "react";
-import type { Dataset } from "../lib/types";
+import type { Dataset, Passive } from "../lib/types";
 import { enumCodec, stringCodec, useUrlState } from "../lib/urlState";
 
-const RANKS = [-3, 0, 1, 3, 4] as const;
-const rankCodec = enumCodec(RANKS);
+const FILTERS = [
+  { id: "positive", label: "Positive", test: (r: number) => r > 0 },
+  { id: "r3", label: "Rank 3+", test: (r: number) => r >= 3 },
+  { id: "r4", label: "Rank 4+", test: (r: number) => r >= 4 },
+  { id: "r5", label: "Rank 5", test: (r: number) => r >= 5 },
+  { id: "negative", label: "Negative", test: (r: number) => r < 0 },
+  { id: "all", label: "All", test: () => true },
+] as const;
+
+type FilterId = (typeof FILTERS)[number]["id"];
+
+const filterCodec = enumCodec<FilterId>(FILTERS.map((f) => f.id));
+
+// Bucket for the rank colour: negatives share one red, positives climb
+// from muted teal to gold.
+function rankTone(rank: number): string {
+  return rank < 0 ? "neg" : String(Math.min(rank, 5));
+}
+
+function rankLabel(rank: number): string {
+  return rank < 0 ? `Rank −${-rank}` : `Rank ${rank}`;
+}
 
 type Props = { dataset: Dataset };
 
 export function PassiveBrowser({ dataset }: Props) {
   const [query, setQuery] = useUrlState("q", "", stringCodec);
-  const [minRank, setMinRank] = useUrlState<(typeof RANKS)[number]>(
-    "rank",
-    0,
-    rankCodec,
+  const [filterId, setFilterId] = useUrlState<FilterId>(
+    "grade",
+    "positive",
+    filterCodec,
   );
 
-  const passives = useMemo(() => {
+  const matchingQuery = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return dataset.passives.filter((p) => {
-      if (p.rank < minRank) return false;
-      if (!q) return true;
-      return (
+    if (!q) return dataset.passives;
+    return dataset.passives.filter(
+      (p) =>
         p.name.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q)
-      );
-    });
-  }, [dataset.passives, query, minRank]);
+        p.description.toLowerCase().includes(q),
+    );
+  }, [dataset.passives, query]);
+
+  const filter = FILTERS.find((f) => f.id === filterId)!;
+  const passives = matchingQuery.filter((p) => filter.test(p.rank));
 
   return (
     <section className="panel">
@@ -37,52 +58,72 @@ export function PassiveBrowser({ dataset }: Props) {
         </p>
       </header>
 
-      <div className="pair-grid">
-        <label className="text-field">
-          <span className="field-label">Search</span>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Artisan, attack, work speed…"
-          />
-        </label>
-        <label className="text-field">
-          <span className="field-label">Min rank</span>
-          <select
-            value={minRank}
-            onChange={(e) => setMinRank(Number(e.target.value) as typeof minRank)}
-          >
-            <option value={-3}>All</option>
-            <option value={0}>Neutral+</option>
-            <option value={1}>Rank 1+</option>
-            <option value={3}>Rank 3+</option>
-            <option value={4}>Rank 4 only</option>
-          </select>
-        </label>
+      <label className="text-field passive-search">
+        <span className="field-label">Search</span>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Artisan, attack, work speed…"
+        />
+      </label>
+
+      <div className="grade-filter" role="radiogroup" aria-label="Rank filter">
+        {FILTERS.map((f) => {
+          const count = matchingQuery.filter((p) => f.test(p.rank)).length;
+          return (
+            <button
+              key={f.id}
+              type="button"
+              role="radio"
+              aria-checked={filterId === f.id}
+              className={`grade-chip tone-${f.id}${filterId === f.id ? " active" : ""}`}
+              onClick={() => setFilterId(f.id)}
+            >
+              {f.label}
+              <span className="grade-count">{count}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="passive-list">
-        {passives.map((p) => (
-          <article key={p.internalName} className="passive-row">
-            <div>
-              <h3>{p.name}</h3>
-              {p.description ? (
-                <ul className="passive-effects">
-                  {p.description.split("\n").map((line) => (
-                    <li key={line}>{line}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>No description</p>
-              )}
-            </div>
-            <div className="passive-meta">
-              <span className={`rank rank-${p.rank}`}>R{p.rank}</span>
-              {p.surgeryCost > 0 && <span>Surgery {p.surgeryCost}</span>}
-            </div>
-          </article>
-        ))}
-      </div>
+      {passives.length === 0 ? (
+        <p className="callout">
+          No passives match{query.trim() ? ` “${query.trim()}”` : ""} in{" "}
+          {filter.label.toLowerCase()}.
+        </p>
+      ) : (
+        <div className="passive-list">
+          {passives.map((p) => (
+            <PassiveCard key={p.internalName} passive={p} />
+          ))}
+        </div>
+      )}
     </section>
+  );
+}
+
+function PassiveCard({ passive: p }: { passive: Passive }) {
+  return (
+    <article className={`passive-row rank-tone-${rankTone(p.rank)}`}>
+      <header className="passive-row-head">
+        <h3>{p.name}</h3>
+        <span className="rank-pill">{rankLabel(p.rank)}</span>
+      </header>
+      {p.description ? (
+        <ul className="passive-effects">
+          {p.description.split("\n").map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      ) : (
+        <p>No description</p>
+      )}
+      {p.surgeryCost > 0 && (
+        <p className="passive-surgery">
+          Surgery cost {p.surgeryCost.toLocaleString()}
+        </p>
+      )}
+    </article>
   );
 }

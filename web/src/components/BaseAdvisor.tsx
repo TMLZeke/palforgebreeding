@@ -7,6 +7,7 @@ import {
 } from "../lib/baseAdvisor";
 import type { Dataset } from "../lib/types";
 import { enumCodec, intCodec, useUrlState } from "../lib/urlState";
+import { PalArt } from "./PalArt";
 import { PalChip } from "./PalSelect";
 
 type Props = { dataset: Dataset };
@@ -74,21 +75,31 @@ export function BaseAdvisor({ dataset }: Props) {
         </p>
       </header>
 
-      <div className="pair-grid">
-        <label className="text-field">
-          <span className="field-label">Base type</span>
-          <select
-            value={baseTypeId}
-            onChange={(e) => setBaseTypeId(e.target.value as BaseTypeId)}
+      <span className="field-label" id="base-type-label">
+        Base type
+      </span>
+      <div
+        className="subtabs base-types"
+        role="radiogroup"
+        aria-labelledby="base-type-label"
+      >
+        {BASE_TYPES.map((b) => (
+          <button
+            key={b.id}
+            type="button"
+            role="radio"
+            aria-checked={baseTypeId === b.id}
+            className={baseTypeId === b.id ? "active" : ""}
+            onClick={() => setBaseTypeId(b.id)}
           >
-            {BASE_TYPES.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="slider-field">
+            {b.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="base-controls">
+        <p className="category-blurb">{baseType.blurb}</p>
+        <label className="slider-field slots-field">
           <span className="field-label">Pal slots: {slots}</span>
           <input
             type="range"
@@ -101,32 +112,41 @@ export function BaseAdvisor({ dataset }: Props) {
         </label>
       </div>
 
-      <p className="category-blurb">{baseType.blurb}</p>
-
       <ol className="advisor-list">
         {recommendations.map((rec, i) => (
-          <li key={rec.pal.id} className="advisor-row">
-            <span className="advisor-rank">{i + 1}</span>
+          <li key={rec.pal.id} className="advisor-card">
+            <span className="advisor-rank" aria-label={`Pick ${i + 1}`}>
+              {i + 1}
+            </span>
+            <PalArt pal={rec.pal} className="advisor-art" />
             <div className="advisor-main">
               <div className="advisor-pal">
                 <PalChip pal={rec.pal} />
                 {rec.pal.nocturnal && (
                   <span className="night-badge" title="Nocturnal — works at night">
-                    🌙 night
+                    <MoonIcon />
+                    Night shift
                   </span>
                 )}
               </div>
-              <div className="work-row">
+              <ul className="work-levels" aria-label="Relevant work">
                 {rec.relevantWork.map((w) => (
-                  <span key={w.type}>
-                    {WORK_LABELS[w.type] ?? w.type} {w.level}
-                  </span>
+                  <li
+                    key={w.type}
+                    className={
+                      (baseType.weights[w.type] ?? 0) >= 1.5 ? "is-core" : ""
+                    }
+                  >
+                    {WORK_LABELS[w.type] ?? w.type}
+                    <strong>{w.level}</strong>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
             <button
               type="button"
-              className="ghost-btn dont-have-btn"
+              className="dont-have-btn"
+              aria-label={`Don’t have ${rec.pal.name}`}
               onClick={() => markDontHave(rec.pal.id)}
             >
               Don’t have
@@ -165,5 +185,23 @@ export function BaseAdvisor({ dataset }: Props) {
         </section>
       )}
     </section>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width="12"
+      height="12"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5 5.8 5.8 0 1 0 13.5 9.6Z" />
+    </svg>
   );
 }
